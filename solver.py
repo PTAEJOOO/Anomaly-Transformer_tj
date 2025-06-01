@@ -22,25 +22,26 @@ def plot_hits(gt, pred):
     fn = (gt == 1) & (pred == 0)
     fp = (gt == 0) & (pred == 1)
 
-    plt.figure(figsize=(12, 1.6))
+    plt.figure(figsize=(8, 2))
     # ground truth 라인 (검은색)
+    sp = 300
     plt.scatter(t[gt == 1], y_gt[gt == 1],
-                marker='|', s=300, c='black', label='Ground-Truth = 1')
+                marker='|', s=sp, c='black', label='Ground-Truth = 1')
     # prediction 라인 (파란색)
-    plt.scatter(t[pred == 1], y_pr[pred == 1],
-                marker='|', s=300, c='blue',  label='Prediction = 1')
+    # plt.scatter(t[pred == 1], y_pr[pred == 1],
+    #             marker='|', s=300, c='blue',  label='Prediction = 1')
 
     # 옳고 그름을 겹쳐서 컬러로 강조
-    plt.scatter(t[tp], y_pr[tp], marker='|', s=300, c='green',  label='True Positive')
-    plt.scatter(t[fn], y_pr[fn], marker='|', s=300, c='red',    label='False Negative')
-    plt.scatter(t[fp], y_pr[fp], marker='|', s=300, c='orange', label='False Positive')
+    plt.scatter(t[tp], y_pr[tp], marker='|', s=sp, c='green',  label='True Positive')
+    plt.scatter(t[fn], y_pr[fn], marker='|', s=sp, c='red',    label='False Negative')
+    plt.scatter(t[fp], y_pr[fp], marker='|', s=sp, c='orange', label='False Positive')
 
     plt.yticks([0, 1], ['Prediction', 'Ground Truth'])
     plt.xlabel('Time Step')
     plt.xlim(-1, len(gt))
-    plt.legend(bbox_to_anchor=(1.02, 1.15), loc='upper left', ncol=3)
+    plt.legend(bbox_to_anchor=(1.02, 1.15), loc='upper left', ncol=1)
     plt.tight_layout()
-    plt.savefig('both_history_plot.png')
+    plt.savefig('bitcoin_history_plot.png')
     plt.show()
 
 # ------------------------------------------------------------------
@@ -59,7 +60,7 @@ def plot_heatmap(gt, pred):
     bw = ListedColormap(['white', 'black'])        # 0 → white, 1 → black
     # ───────────────────────────────────────────────
 
-    fig, ax = plt.subplots(figsize=(12, 1.6))
+    fig, ax = plt.subplots(figsize=(8, 2))
     im = ax.imshow(mat,
                    aspect='auto',
                    cmap=bw,            # 흑백 2단계
@@ -82,7 +83,7 @@ def plot_heatmap(gt, pred):
 
     ax.set_title('Binary Sequence Heat-map')
     plt.tight_layout()
-    plt.savefig('both_heatmap.png')
+    plt.savefig('bitcoin_heatmap.png')
     plt.show()
 
 
