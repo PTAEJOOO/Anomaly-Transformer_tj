@@ -2,11 +2,88 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
+import matplotlib.pyplot as plt
 import os
 import time
 from utils.utils import *
 from model.AnomalyTransformer import AnomalyTransformer
 from data_factory.data_loader import get_loader_segment
+
+def plot_hits(gt, pred):
+    gt   = np.asarray(gt).astype(int)
+    pred = np.asarray(pred).astype(int)
+    t    = np.arange(len(gt))
+
+    # 마커 위치를 0–1 두 줄로 나눔
+    y_gt, y_pr = np.ones_like(t), np.zeros_like(t)
+
+    # 분류 결과
+    tp = (gt == 1) & (pred == 1)
+    fn = (gt == 1) & (pred == 0)
+    fp = (gt == 0) & (pred == 1)
+
+    plt.figure(figsize=(12, 1.6))
+    # ground truth 라인 (검은색)
+    plt.scatter(t[gt == 1], y_gt[gt == 1],
+                marker='|', s=300, c='black', label='Ground-Truth = 1')
+    # prediction 라인 (파란색)
+    plt.scatter(t[pred == 1], y_pr[pred == 1],
+                marker='|', s=300, c='blue',  label='Prediction = 1')
+
+    # 옳고 그름을 겹쳐서 컬러로 강조
+    plt.scatter(t[tp], y_pr[tp], marker='|', s=300, c='green',  label='True Positive')
+    plt.scatter(t[fn], y_pr[fn], marker='|', s=300, c='red',    label='False Negative')
+    plt.scatter(t[fp], y_pr[fp], marker='|', s=300, c='orange', label='False Positive')
+
+    plt.yticks([0, 1], ['Prediction', 'Ground Truth'])
+    plt.xlabel('Time Step')
+    plt.xlim(-1, len(gt))
+    plt.legend(bbox_to_anchor=(1.02, 1.15), loc='upper left', ncol=3)
+    plt.tight_layout()
+    plt.savefig('both_history_plot.png')
+    plt.show()
+
+# ------------------------------------------------------------------
+# 2) 3행 히트맵(GT·Pred·Match) — 아주 긴 시계열을 한눈에 보기 편함
+# ------------------------------------------------------------------
+from matplotlib.colors import ListedColormap   # ← 새로 import
+
+def plot_heatmap(gt, pred):
+    gt   = np.asarray(gt).astype(int)
+    pred = np.asarray(pred).astype(int)
+    match = (gt == pred).astype(int)
+
+    mat = np.vstack([gt, pred, match])   # (3, L)
+
+    # ───────────────────────────────────────────────
+    bw = ListedColormap(['white', 'black'])        # 0 → white, 1 → black
+    # ───────────────────────────────────────────────
+
+    fig, ax = plt.subplots(figsize=(12, 1.6))
+    im = ax.imshow(mat,
+                   aspect='auto',
+                   cmap=bw,            # 흑백 2단계
+                   vmin=0, vmax=1,     # 꼭 0/1에 맞춰줌
+                   interpolation='nearest')  # 보간 끄기
+
+    # 행 레이블
+    ax.set_yticks([0, 1, 2])
+    ax.set_yticklabels(['GT', 'Pred', 'Match'])
+    ax.set_xticks([])
+
+    # 행 구분선
+    for y in np.arange(0.5, 3, 1):
+        ax.hlines(y, xmin=-0.5, xmax=len(gt)-0.5,
+                  color='black', linewidth=0.8)
+
+    # 컬러바(선택) – 흑백이라 사실 필요 없지만 두고 싶다면:
+    cbar = fig.colorbar(im, ticks=[0, 1])
+    cbar.set_label('0 / 1')
+
+    ax.set_title('Binary Sequence Heat-map')
+    plt.tight_layout()
+    plt.savefig('both_heatmap.png')
+    plt.show()
 
 
 def my_kl_loss(p, q):
@@ -135,7 +212,7 @@ class Solver(object):
         path = self.model_save_path
         if not os.path.exists(path):
             os.makedirs(path)
-        early_stopping = EarlyStopping(patience=3, verbose=True, dataset_name=self.dataset)
+        early_stopping = EarlyStopping(patience=10, verbose=True, dataset_name=self.dataset)
         train_steps = len(self.train_loader)
 
         for epoch in range(self.num_epochs):
@@ -171,7 +248,7 @@ class Solver(object):
                                                                                                        self.win_size)))))
                 series_loss = series_loss / len(prior)
                 prior_loss = prior_loss / len(prior)
-
+                
                 rec_loss = self.criterion(output, input)
 
                 loss1_list.append((rec_loss - self.k * series_loss).item())
@@ -327,7 +404,7 @@ class Solver(object):
         test_labels = np.concatenate(test_labels, axis=0).reshape(-1)
         test_energy = np.array(attens_energy)
         test_labels = np.array(test_labels)
-
+        
         pred = (test_energy > thresh).astype(int)
 
         gt = test_labels.astype(int)
@@ -361,6 +438,10 @@ class Solver(object):
         gt = np.array(gt)
         print("pred: ", pred.shape)
         print("gt:   ", gt.shape)
+        print(pred)
+        print(gt)
+        plot_hits(gt, pred)
+        plot_heatmap(gt, pred)
 
         from sklearn.metrics import precision_recall_fscore_support
         from sklearn.metrics import accuracy_score
