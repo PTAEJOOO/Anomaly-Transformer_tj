@@ -309,6 +309,10 @@ def get_loader_segment(data_path, batch_size, win_size=100, step=100, mode='trai
         dataset = CryptoSegLoader(csv_path=data_path + "/bitcoin_transactions.csv",win_size=win_size,step=1,mode=mode)
     elif (dataset == 'ethereum'):
         dataset = CryptoSegLoader(csv_path=data_path + "/ethereum_transactions.csv",win_size=win_size,step=1,mode=mode)
+    elif (dataset == 'bitcoin_log_diff'):
+        dataset = CryptoSegLoader(csv_path=data_path + "/bitcoin_log_diff.csv",win_size=win_size,step=1,mode=mode)
+    elif (dataset == 'ethereum_log_diff'):
+        dataset = CryptoSegLoader(csv_path=data_path + "/ethereum_log_diff.csv",win_size=win_size,step=1,mode=mode)
 
     shuffle = False
     if mode == 'train':
